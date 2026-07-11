@@ -2,8 +2,6 @@
 # Visual Studio project and build files
 x64/
 .vs/
-*.sln
-*.vcxproj
 *.filters
 *.user
 
