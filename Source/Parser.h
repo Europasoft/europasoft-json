@@ -1,4 +1,4 @@
-// Copyright 2025 Simon Liimatainen, Europa Software. All rights reserved.
+// Copyright 2026 Simon Liimatainen, Europa Software. All rights reserved.
 #pragma once
 #include <string>
 #include <vector>
@@ -8,19 +8,19 @@
 #include <memory>
 #include <cstdint>
 
-constexpr auto STC_SBR_L = '[';
-constexpr auto STC_SBR_R = ']';
-constexpr auto STC_CBR_L = '{';
-constexpr auto STC_CBR_R = '}';
-constexpr auto STC_CL = ':';
-constexpr auto STC_CM = ',';
-constexpr auto STR_DELIM = '"';
-
 namespace JSONTextUtils
 {
 	typedef std::string str_t;
 	typedef std::string_view str_view;
 	typedef char char_t;
+
+	constexpr auto STC_SBR_L = '[';
+	constexpr auto STC_SBR_R = ']';
+	constexpr auto STC_CBR_L = '{';
+	constexpr auto STC_CBR_R = '}';
+	constexpr auto STC_CL = ':';
+	constexpr auto STC_CM = ',';
+	constexpr auto STR_DELIM = '"';
 
 	uint8_t ctu8(char_t c);
 
@@ -40,7 +40,7 @@ namespace JSONTextUtils
 	str_view literalBooleanValue(size_t& i, str_view text);
 
 	bool isLiteralNullStr(size_t i, str_view text);
-	str_view literalNullValue(size_t& i, str_view text);
+	str_view literalNullValue(size_t& i);
 
 	// converts a single UTF-8 codepoint to UTF-32BE
 	uint32_t utf8to32be(str_view fullString, size_t& startIndexInOut);
@@ -139,10 +139,8 @@ namespace JSON
 
 }
 
-namespace
+namespace JSON::Internals
 {
-	using namespace JSONTextUtils;
-
 	enum class TokenType { Undefined, Structural, String, Number, Boolean, Null };
 	enum class StructuralTokenType { NotStructural, ObjectBegin, ObjectEnd, ArrayBegin, ArrayEnd, KeyValueDelim, MemberDelim };
 	class Token 
@@ -163,11 +161,99 @@ namespace
 
 	str_view tokenTypeToString(TokenType t);
 	JSON::ObjectType valueTokenToObjType(const Token& token);
+}
 
+namespace XMLTextUtils
+{
+	using str_t = JSONTextUtils::str_t;
+	using str_view = JSONTextUtils::str_view;
+	using char_t = JSONTextUtils::char_t;
 
-	
+	constexpr auto STC_CHEVRON_L = '<';
+	constexpr auto STC_CHEVRON_R = '>';
+	constexpr auto STC_SLASH = '/';
+	constexpr auto STC_EQUALS = '=';
+	constexpr auto STR_DELIM = '"';
+	constexpr auto STC_QUESTION = '?';
+	constexpr auto STC_EXCLAMATION = '!';
+	constexpr auto STC_DASH = '-';
 
+	bool isStructuralChar(char_t c);
+	bool isWhitespaceChar(char_t c);
+}
 
+namespace XML
+{
+	using str_view = XMLTextUtils::str_view;
+	using str_t = XMLTextUtils::str_t;
+
+	enum class NodeType { Undefined, Element, Text, Declaration, Comment };
+
+	class Node;
+	using NodePtr = std::shared_ptr<Node>;
+
+	class Node
+	{
+	public:
+		Node() { reset(); }
+		Node(NodeType t) : type{ t } {};
+		Node(NodeType t, str_view n) : type{ t }, name{ n } {};
+		Node(NodeType t, str_view n, str_view v) : type{ t }, name{ n }, value{ v } {};
+
+		void reset();
+
+		NodeType getType() const noexcept;
+		str_view getName() const noexcept;
+		str_view getValue() const noexcept;
+		const std::map<str_t, str_t>& getAttributes() const noexcept;
+
+		void setAttribute(str_view name, str_view value);
+		void push_back(NodePtr child);
+
+		str_t toString(bool readable = true, size_t depth = 0) const noexcept;
+
+		std::vector<NodePtr>::const_iterator begin() const noexcept { return children.begin(); }
+		std::vector<NodePtr>::const_iterator end() const noexcept { return children.end(); }
+
+	private:
+		NodeType type;
+		str_t name;
+		str_t value;
+		std::map<str_t, str_t> attributes;
+		std::vector<NodePtr> children;
+	};
+
+	enum class Result : uint32_t
+	{
+		OK = 0,
+		Error_Lexer_InvalidEncoding = 401,
+		Error_Lexer_IllegalToken = 402,
+		Error_Parser_NoTokens = 501,
+		Error_Parser_MismatchedTag = 502,
+		Error_Parser_UnexpectedToken = 503,
+		Error_File = 601
+	};
+
+	Result load(str_view text, Node& nodeOut);
+	Result loadFromFile(str_view filePath, Node& nodeOut);
+}
+
+namespace XML::Internals
+{
+	enum class TokenType { Undefined, TagBegin, TagEnd, Slash, Equals, String, Name, Text, DeclBegin, DeclEnd, CommentBegin, CommentEnd };
+
+	class Token
+	{
+	public:
+		TokenType type;
+		str_t data;
+		Token() { reset(); }
+		Token(TokenType t, str_view d) : type{ t }, data{ d } {};
+		void reset() { data.clear(); type = TokenType::Undefined; }
+	};
+
+	Result lex(str_view text, std::vector<Token>& tokens);
+	Result parse(const std::vector<Token>& tokens, Node& nodeOut);
 }
 
 
