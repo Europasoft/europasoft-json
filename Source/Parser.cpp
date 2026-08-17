@@ -10,6 +10,7 @@
 #include <exception>
 #include <algorithm>
 #include <utility>
+#include <charconv>
 
 
 namespace JSONTextUtils
@@ -272,6 +273,20 @@ namespace JSON
 	str_view Object::getValue() const noexcept
 	{
 		return value;
+	}
+
+	double Object::getValueDouble() const noexcept
+	{
+		double v = 0.0;
+		auto [ptr, e] = std::from_chars(value.data(), value.data() + value.size(), v);
+		return v;
+	}
+
+	int64_t Object::getValueInt() const noexcept
+	{
+		int64_t v = 0.0;
+		auto [ptr, e] = std::from_chars(value.data(), value.data() + value.size(), v);
+		return v;
 	}
 
 	ObjectType Object::getType() const noexcept

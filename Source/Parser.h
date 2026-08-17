@@ -58,6 +58,7 @@ namespace JSON
 	using str_t = JSONTextUtils::str_t;
 	class Object;
 	using ObjectPtr = std::shared_ptr<Object>;
+	// to forward declare ObjectPtr: namespace JSON { class Object; using ObjectPtr = std::shared_ptr<Object>; }
 	using SubobjectIterator = std::vector<ObjectPtr>::const_iterator;
 	using std::uint32_t;
 
@@ -80,6 +81,8 @@ namespace JSON
 		bool isArray() const noexcept;
 		bool hasNamedSubobject(str_view name) const noexcept;
 		JSONTextUtils::str_view getValue() const noexcept;
+		double getValueDouble() const noexcept;
+		int64_t getValueInt() const noexcept;
 		ObjectType getType() const noexcept;
 		size_t size() const noexcept;
 		void set(ObjectType t, JSONTextUtils::str_view v);
